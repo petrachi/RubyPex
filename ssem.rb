@@ -14,6 +14,10 @@
 # 6	011	Test		CMP	Skip next instruction if content of Accumulator is negative
 # 7	111	Stop		STOP	Light "Stop" neon and halt the machine.
 
+# 5720 sec - 1h 35min 20sec
+# 4598 sec - 1h 16min 38sec
+# goal: 52min
+
 class Tube
   def initialize bits
     @memory = bits.split
@@ -29,10 +33,12 @@ class Tube
   end
 
   def display
-    @memory.each_with_index do |line, i|
-      p "%02i: %s" % [i, line]
+    system 'clear'
+    memory_map = @memory.each_with_index.map do |line, i|
+      # "%02i: %s" % [i, line]
+      line.gsub(/[01]/, '0' => '. ', '1' => '| ')
     end
-    p '&' * 36
+    STDOUT.write memory_map.join("\n")
   end
 end
 
@@ -53,11 +59,15 @@ class Accumulator
   def reset
     @value = '0'*32
   end
+
+  def test_negative?
+    @value[-1] == '1'
+  end
 end
 
 
 class SSEM
-  INSTRUCTIONS = ['JMP', 'JRP', 'LDN', 'STO', 'SUB', 'SUB', 'CMB', 'STOP']
+  INSTRUCTIONS = ['JMP', 'JRP', 'LDN', 'STO', 'SUB', 'SUB', 'CMP', 'STOP']
 
   def initialize bits
     @tube = Tube.new(bits)
@@ -65,22 +75,25 @@ class SSEM
 
     @ci = '0'*32
     @stop = false
-
-    start
   end
 
   def start
+    #x = 50
     begin
       @ci = ('%032b' % (@ci.reverse.to_i(2) + 0b1)).reverse
       play
+      #x -= 1
+      #bhjdfbhjgtv if x < 0
     end until @stop
   end
 
   def play
     @pi = @tube.read @ci
 
-    p "ci : #{@ci}"
-    p "instruction: #{INSTRUCTIONS[@pi[13..15].reverse.to_i(2)]} (arg: #{@pi[0..4].reverse.to_i(2)})"
+    #p "ci : #{@ci}"
+    #p "instruction: #{INSTRUCTIONS[@pi[13..15].reverse.to_i(2)]} (arg: #{@pi[0..4].reverse.to_i(2)})"
+
+    @tube.display
 
     send INSTRUCTIONS[@pi[13..15].reverse.to_i(2)]
   end
@@ -90,7 +103,11 @@ class SSEM
   end
 
   def JRP
-    @ci = ('%032b' % (@ci.reverse.to_i(2) + @tube.read(@pi).reverse.to_i(2))).reverse
+    result = @ci.reverse.to_i(2) + @tube.read(@pi).reverse.to_i(2)
+    @ci = 31.downto(0).map { |n| result[n] }.join.reverse
+
+
+  #  @ci = ('%032b' % (@ci.reverse.to_i(2) + @tube.read(@pi).reverse.to_i(2))).reverse
   end
 
   def LDN
@@ -106,8 +123,10 @@ class SSEM
     @accumulator.write @tube.read(@pi)
   end
 
-  def CMB
-    p "c"
+  def CMP
+    if @accumulator.test_negative?
+      @ci = ('%032b' % (@ci.reverse.to_i(2) + 0b1)).reverse
+    end
   end
 
   def STOP
@@ -115,8 +134,6 @@ class SSEM
     @tube.display
   end
 end
-
-# 00000111111111000111111111111111
 
 # jump vers la ligne 3, qui stope
 # 0 0
@@ -154,7 +171,7 @@ SSEM.new("00000000000000000000000000000000
 00000000000000000000000000000000
 00000000000000000000000000000000
 00000000000000000000000000000000
-00000000000000000000000000000000")
+00000000000000000000000000000000").start
 
 
 
@@ -206,7 +223,7 @@ SSEM.new("00000000000000000000000000000000
 00000000000000000000000000000000
 00000000000000000000000000000000
 00000000000000000000000000000000
-00000000000000000000000000000000")
+00000000000000000000000000000000").start
 
 p "-"*32
 
@@ -253,7 +270,7 @@ SSEM.new("00000000000000000000000000000000
 11010000000000000000000000000000
 00100100000000000000000000000000
 00000000000000000000000000000000
-00000000000000000000000000000000")
+00000000000000000000000000000000").start
 
 p "-"*32
 
@@ -290,4 +307,128 @@ SSEM.new("00000000000000000000000000000000
 10001100000000000000000000000000
 01111111111111111111111111111111
 00000000000000000000000000000000
+00000000000000000000000000000000").start
+
+# try the cmp function, first put positive number, should not jump, then put negative number, should jump and stop
+# 0 0
+# 1 ldn 8
+# 2 cmp
+# 3 ldn 9
+# 4 cmp
+# 5 jmp 7
+# 6 stop
+# 7 0
+# 8 -1
+# 9 1
+SSEM.new("00000000000000000000000000000000
+00010000000000100000000000000000
+00000000000000110000000000000000
+10010000000000100000000000000000
+00000000000000110000000000000000
+11100000000000000000000000000000
+00000000000001110000000000000000
+00000000000000000000000000000000
+11111111111111111111111111111111
+10000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000").start
+
+
+p "first prog"
+# first program reconstruction
+
+# 01: LDN 24   -- Accumulator := -Initial Trial Divisor
+# 02: STO 26   -- Store as -Trial Divisor
+# 03: LDN 26   -- Accumulator := -(-Trial Divisor)
+# 04: STO 27   -- Store as +Trial Divisor
+# 05: LDN 23   -- Accumulator := -(-Number)
+# 06: SUB 27   -- Subtract +Trial Divisor
+# 07: SKN      -- Skip if Negative
+# 08: JMR 20   --   otherwise go to line 6 via indirect relative jump
+# 09: SUB 26   -- Subtract -Trial Divisor to get +Remainder
+# 10: STO 25   -- Store Remainder
+# 11: LDN 25   -- Accumulator := -Remainder
+# 12: SKN      -- Skip if Negative ; Remainder is not Zero
+# 13: HLT      --   otherwise Stop ; Trial Divisor divides Number
+# 14: LDN 26   -- Accumulator := -(-Trial Divisor)
+# 15: SUB 21   --   and Subtract +1 to decrement Trial Divisor
+# 16: STO 27   -- Store new +Trial Divisor
+# 17: LDN 27   -- Accumulator := -Trial Divisor
+# 18: STO 26   -- Store -Trial Divisor
+# 19: JMP 22   -- Go to Line 5
+# 20: NUM -3   -- jump offset
+# 21: NUM 1    -- constant
+# 22: NUM 4    -- jump address
+# 23: NUM -35  -- negative Number
+# 24: NUM 34   -- Initial Trial Divisor (typically Number-1)
+# 25:          -- Remainder
+# 26:          -- -Trial Divisor
+# 27:          -- +Trial Divisor and Answer
+
+x = SSEM.new("00000000000000000000000000000000
+00011000000000100000000000000000
+01011000000001100000000000000000
+01011000000000100000000000000000
+11011000000001100000000000000000
+11101000000000100000000000000000
+11011000000000010000000000000000
+00000000000000110000000000000000
+00101000000001000000000000000000
+01011000000000010000000000000000
+10011000000001100000000000000000
+10011000000000100000000000000000
+00000000000000110000000000000000
+00000000000001110000000000000000
+01011000000000100000000000000000
+10101000000000010000000000000000
+11011000000001100000000000000000
+11011000000000100000000000000000
+01011000000001100000000000000000
+01101000000000000000000000000000
+10111111111111111111111111111111
+10000000000000000000000000000000
+00100000000000000000000000000000
+00000000000000000011111111111111
+11111111111111111100000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
+00000000000000000000000000000000
 00000000000000000000000000000000")
+
+number = x.instance_variable_get("@tube").instance_variable_get("@memory")[23]
+x.instance_variable_get("@tube").display
+t = Time.now
+x.start
+
+z = Time.now - t
+x.instance_variable_get("@tube").display
+answer = x.instance_variable_get("@tube").instance_variable_get("@memory")[27]
+
+p 'number'
+p -(number.reverse.to_i(2))
+p 'answer'
+p answer.reverse.to_i(2)
+p "tipme: #{z}"
