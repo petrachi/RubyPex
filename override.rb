@@ -33,7 +33,8 @@ end
 
 begin
   print "\nIt override a method defined in the same class (injection) : #{ InjectionTest.new.result }"
-rescue
+rescue => e
+  p e
   print "\nNOK"
 end
 
@@ -76,43 +77,43 @@ rescue
   print "\nNOK"
 end
 
-module Prepended
-  override_method :result do
-    __olddef__[1..-1]
-  end
-end
+# module Prepended
+#   override_method :result do
+#     __olddef__[1..-1]
+#   end
+# end
+#
+# class PrependTest
+#   prepend Prepended
+#
+#   def result
+#     "NOK"
+#   end
+# end
+#
+# begin
+#   print "\nIt override a method in a prepended module : #{ PrependTest.new.result }"
+# rescue
+#   print "\nNOK"
+# end
 
-class PrependTest
-  prepend Prepended
-
-  def result
-    "NOK"
-  end
-end
-
-begin
-  print "\nIt override a method in a prepended module : #{ PrependTest.new.result }"
-rescue
-  print "\nNOK"
-end
-
-class DelegatedTo
-  def result
-    "NOK"
-  end
-end
-
-class DelegatorTest < SimpleDelegator
-  override_method :result do
-    __olddef__[1..-1]
-  end
-end
-
-begin
-  print "\nIt override a method defined thought delegation : #{ DelegatorTest.new(DelegatedTo.new).result }"
-rescue
-  print "\nNOK"
-end
+# class DelegatedTo
+#   def result
+#     "NOK"
+#   end
+# end
+#
+# class DelegatorTest < SimpleDelegator
+#   override_method :result do
+#     __olddef__[1..-1]
+#   end
+# end
+#
+# begin
+#   print "\nIt override a method defined thought delegation : #{ DelegatorTest.new(DelegatedTo.new).result }"
+# rescue
+#   print "\nNOK"
+# end
 
 class ErrorTest
   override_method :result do
