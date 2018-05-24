@@ -1,0 +1,2 @@
+class Override::Base
+end
